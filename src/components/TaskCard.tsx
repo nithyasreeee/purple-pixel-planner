@@ -10,11 +10,9 @@ interface TaskCardProps {
   task: Task;
   onToggleComplete?: (taskId: string) => void;
   onToggleStar?: (taskId: string) => void;
-  onEdit?: (task: Task) => void;
-  onDelete?: (taskId: string) => void;
 }
 
-const TaskCard = ({ task, onToggleComplete, onToggleStar, onEdit, onDelete }: TaskCardProps) => {
+const TaskCard = ({ task, onToggleComplete, onToggleStar }: TaskCardProps) => {
   const [isCompleting, setIsCompleting] = useState(false);
 
   const handleComplete = () => {
@@ -87,7 +85,6 @@ const TaskCard = ({ task, onToggleComplete, onToggleStar, onEdit, onDelete }: Ta
               variant="ghost"
               size="icon"
               className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => onEdit?.(task)}
             >
               <MoreVertical className="w-4 h-4 text-muted-foreground" />
             </Button>
