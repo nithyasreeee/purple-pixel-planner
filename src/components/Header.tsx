@@ -1,10 +1,30 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Menu, Bell, User } from "lucide-react";
+import { Search, Plus, Menu, Bell, User, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthModal } from "./AuthModal";
+import { TaskModal } from "./TaskModal";
+import { useTasks } from "@/hooks/useTasks";
 
-const Header = () => {
+interface HeaderProps {
+  onNewTask?: () => void;
+}
+
+const Header = ({ onNewTask }: HeaderProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const { user, signOut } = useAuth();
+  const { addTask } = useTasks();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  const handleCreateTask = (task: any) => {
+    addTask(task);
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-background-secondary/80 backdrop-blur-md border-b border-secondary/20">
@@ -36,29 +56,43 @@ const Header = () => {
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
-            <Button
-              size="sm"
-              className="btn-primary hidden sm:flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>New Task</span>
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-secondary hover:bg-secondary/10"
-            >
-              <Bell className="w-5 h-5" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-secondary hover:bg-secondary/10"
-            >
-              <User className="w-5 h-5" />
-            </Button>
+            {user ? (
+              <>
+                <Button
+                  size="sm"
+                  className="btn-primary hidden sm:flex items-center space-x-2"
+                  onClick={() => setShowTaskModal(true)}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>New Task</span>
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-secondary hover:bg-secondary/10"
+                >
+                  <Bell className="w-5 h-5" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-secondary hover:bg-secondary/10"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="w-5 h-5" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                className="btn-primary"
+                onClick={() => setShowAuthModal(true)}
+              >
+                Sign In
+              </Button>
+            )}
             
             <Button
               variant="ghost"
@@ -70,6 +104,14 @@ const Header = () => {
           </div>
         </div>
       </div>
+      
+      {/* Modals */}
+      <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      <TaskModal 
+        open={showTaskModal} 
+        onOpenChange={setShowTaskModal}
+        onSave={handleCreateTask}
+      />
     </header>
   );
 };

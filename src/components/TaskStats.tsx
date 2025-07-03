@@ -31,25 +31,33 @@ const StatsCard = ({ title, value, icon, color, trend }: StatsCardProps) => (
   </Card>
 );
 
-const TaskStats = () => {
+interface TaskStatsProps {
+  tasks: any[];
+}
+
+const TaskStats = ({ tasks }: TaskStatsProps) => {
+  const completedTasks = tasks.filter(t => t.status === "completed").length;
+  const inProgressTasks = tasks.filter(t => t.status === "in-progress").length;
+  const pendingTasks = tasks.filter(t => t.status === "todo").length;
+
   const stats = [
     {
       title: "Completed Tasks",
-      value: 24,
+      value: completedTasks,
       icon: <CheckCircle className="w-6 h-6" />,
       color: "bg-success/20 text-success",
       trend: 12
     },
     {
       title: "In Progress",
-      value: 8,
+      value: inProgressTasks,
       icon: <Clock className="w-6 h-6" />,
       color: "bg-primary/20 text-primary",
       trend: 5
     },
     {
       title: "Pending",
-      value: 12,
+      value: pendingTasks,
       icon: <AlertTriangle className="w-6 h-6" />,
       color: "bg-secondary/20 text-secondary"
     }

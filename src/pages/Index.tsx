@@ -4,109 +4,65 @@ import HeroSection from "@/components/HeroSection";
 import TaskStats from "@/components/TaskStats";
 import TaskCard from "@/components/TaskCard";
 import FilterSidebar from "@/components/FilterSidebar";
+import { BalancePanel } from "@/components/BalancePanel";
+import { TaskModal } from "@/components/TaskModal";
 import { Button } from "@/components/ui/button";
 import { Plus, Grid, List } from "lucide-react";
 import { Task } from "@/types/task";
+import { useTasks } from "@/hooks/useTasks";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   
-  // Sample task data
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      title: "Design new landing page",
-      description: "Create a modern, responsive landing page for the product launch",
-      priority: "high" as const,
-      status: "in-progress" as const,
-      dueDate: "Dec 15, 2024",
-      category: "Work",
-      isStarred: true
-    },
-    {
-      id: "2",
-      title: "Review pull requests",
-      description: "Review and approve pending pull requests from the development team",
-      priority: "medium" as const,
-      status: "todo" as const,
-      dueDate: "Dec 12, 2024",
-      category: "Work",
-      isStarred: false
-    },
-    {
-      id: "3",
-      title: "Grocery shopping",
-      description: "Buy groceries for the week including fruits, vegetables, and dairy",
-      priority: "low" as const,
-      status: "completed" as const,
-      dueDate: "Dec 10, 2024",
-      category: "Personal",
-      isStarred: false
-    },
-    {
-      id: "4",
-      title: "Gym workout",
-      description: "Complete the full body workout routine",
-      priority: "medium" as const,
-      status: "todo" as const,
-      dueDate: "Dec 11, 2024",
-      category: "Health",
-      isStarred: true
-    },
-    {
-      id: "5",
-      title: "Team meeting preparation",
-      description: "Prepare agenda and materials for the upcoming team meeting",
-      priority: "high" as const,
-      status: "todo" as const,
-      dueDate: "Dec 13, 2024",
-      category: "Work",
-      isStarred: false
-    },
-    {
-      id: "6",
-      title: "Book dentist appointment",
-      description: "Schedule routine dental checkup for next month",
-      priority: "low" as const,
-      status: "in-progress" as const,
-      dueDate: "Dec 20, 2024",
-      category: "Health",
-      isStarred: false
+  const { user } = useAuth();
+  const { tasks, loading, addTask, updateTask, deleteTask, toggleTaskComplete, toggleTaskStar } = useTasks();
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setShowTaskModal(true);
+  };
+
+  const handleSaveTask = async (taskData: Omit<Task, 'id'>) => {
+    if (editingTask) {
+      await updateTask(editingTask.id, taskData);
+      setEditingTask(undefined);
+    } else {
+      await addTask(taskData);
     }
-  ]);
-
-  const handleToggleComplete = (taskId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, status: task.status === "completed" ? "todo" : "completed" as const }
-        : task
-    ));
+    setShowTaskModal(false);
   };
 
-  const handleToggleStar = (taskId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, isStarred: !task.isStarred }
-        : task
-    ));
+  const handleCloseModal = () => {
+    setShowTaskModal(false);
+    setEditingTask(undefined);
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-primary">
+        <Header />
+        <HeroSection />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-primary">
       <Header />
       
-      {/* Hero Section */}
-      <HeroSection />
-      
       {/* Main Dashboard */}
       <div className="container mx-auto px-4 py-12">
         {/* Stats */}
-        <TaskStats />
+        <TaskStats tasks={tasks} />
         
         <div className="flex gap-8">
           {/* Sidebar */}
-          <div className="hidden lg:block">
+          <div className="hidden lg:block space-y-6">
             <FilterSidebar />
+            <BalancePanel />
           </div>
           
           {/* Main Content */}
@@ -138,7 +94,10 @@ const Index = () => {
                   </Button>
                 </div>
                 
-                <Button className="btn-primary">
+                <Button 
+                  className="btn-primary"
+                  onClick={() => setShowTaskModal(true)}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Task
                 </Button>
@@ -146,28 +105,61 @@ const Index = () => {
             </div>
             
             {/* Tasks Grid */}
-            <div className={
-              viewMode === "grid" 
-                ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" 
-                : "space-y-4"
-            }>
-              {tasks.map((task, index) => (
-                <div 
-                  key={task.id} 
-                  className="animate-bounce-in"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <TaskCard 
-                    task={task} 
-                    onToggleComplete={handleToggleComplete}
-                    onToggleStar={handleToggleStar}
-                  />
-                </div>
-              ))}
-            </div>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="task-card animate-pulse">
+                    <div className="h-32 bg-muted rounded-lg"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={
+                viewMode === "grid" 
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" 
+                  : "space-y-4"
+              }>
+                {tasks.length === 0 ? (
+                  <div className="col-span-full text-center py-12">
+                    <p className="text-muted-foreground mb-4">No tasks yet. Create your first task!</p>
+                    <Button 
+                      className="btn-primary"
+                      onClick={() => setShowTaskModal(true)}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Task
+                    </Button>
+                  </div>
+                ) : (
+                  tasks.map((task, index) => (
+                    <div 
+                      key={task.id} 
+                      className="animate-bounce-in"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <TaskCard 
+                        task={task} 
+                        onToggleComplete={toggleTaskComplete}
+                        onToggleStar={toggleTaskStar}
+                        onEdit={handleEditTask}
+                        onDelete={deleteTask}
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
+      
+      {/* Task Modal */}
+      <TaskModal 
+        open={showTaskModal}
+        onOpenChange={handleCloseModal}
+        onSave={handleSaveTask}
+        task={editingTask}
+      />
     </div>
   );
 };
